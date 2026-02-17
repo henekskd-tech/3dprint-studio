@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Print Studio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ==================== ЭКРАН АВТОРИЗАЦИИ ==================== -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-container">
+            <!-- Табы -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthMode('login')" id="tabLogin">Вход</button>
+                <button class="auth-tab" onclick="switchAuthMode('register')" id="tabRegister">Регистрация</button>
+            </div>
+
+            <!-- ФОРМА ВХОДА -->
+            <div id="loginForm" class="auth-form-section active">
+                <div class="auth-logo">
+                    <i class="fas fa-cube"></i>
+                    <h1>3D Print Studio</h1>
+                    <p>Вход в личный кабинет</p>
+                </div>
+
+                <!-- Шаг 1: Ввод email -->
+                <div id="loginStep1" class="auth-step active">
+                    <form onsubmit="checkEmailExists(event)">
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" id="loginEmail" required placeholder="your@email.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-large">
+                            <i class="fas fa-arrow-right"></i> Продолжить
+                        </button>
+                    </form>
+                    
+                    <div class="auth-divider">или</div>
+                    
+                    <button class="btn btn-outline btn-block" onclick="continueAsGuest()">
+                        <i class="fas fa-user-secret"></i> Войти как гость
+                    </button>
+                    
+                    <p class="admin-hint">
+                        <i class="fas fa-shield-alt"></i> 
+                        <a href="#" onclick="showAdminLogin()">Вход для администратора</a>
+                    </p>
+                </div>
+
+                <!-- Шаг 2: Ввод пароля (существующий пользователь) -->
+                <div id="loginStep2Existing" class="auth-step">
+                    <div class="user-info-box">
+                        <i class="fas fa-user-circle"></i>
+                        <p id="existingUserEmail"></p>
+                        <button class="btn-text" onclick="backToLoginEmail()">
+                            <i class="fas fa-edit"></i> Сменить email
+                        </button>
+                    </div>
+                    
+                    <form onsubmit="loginExistingUser(event)">
+                        <div class="form-group">
+                            <label>Пароль *</label>
+                            <div class="input-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="existingUserPassword" required placeholder="Введите пароль">
+                                <button type="button" class="toggle-pass" onclick="togglePassword('existingUserPassword', this)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-large">
+                            <i class="fas fa-sign-in-alt"></i> Войти
+                        </button>
+                    </form>
+                    
+                    <p class="forgot-password">
+                        <a href="#" onclick="resetPassword()">Забыли пароль?</a>
+                    </p>
+                </div>
+
+                <!-- Шаг 2: Новый пользователь (переход на регистрацию) -->
+                <div id="loginStep2New" class="auth-step">
+                    <div class="new-user-info">
+                        <i class="fas fa-user-plus"></i>
+                        <p>Аккаунт с email <strong id="newUserEmail"></strong> не найден</p>
+                    </div>
+                    <button class="btn btn-primary btn-block btn-large" onclick="switchToRegister()">
+                        <i class="fas fa-user-plus"></i> Создать аккаунт
+                    </button>
+                    <button class="btn btn-outline btn-block" onclick="backToLoginEmail()">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                </div>
+            </div>
+
+            <!-- ФОРМА РЕГИСТРАЦИИ -->
+            <div id="registerForm" class="auth-form-section">
+                <div class="auth-logo">
+                    <i class="fas fa-user-plus"></i>
+                    <h1>Создание аккаунта</h1>
+                    <p>Зарегистрируйтесь для заказов</p>
+                </div>
+
+                <!-- Шаг 1: Email -->
+                <div id="registerStep1" class="auth-step active">
+                    <form onsubmit="startRegistration(event)">
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" id="registerEmail" required placeholder="your@email.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-large">
+                            <i class="fas fa-paper-plane"></i> Получить код
+                        </button>
+                    </form>
+                    <button class="btn btn-text btn-block" onclick="switchAuthMode('login')">
+                        Уже есть аккаунт? Войти
+                    </button>
+                </div>
+
+                <!-- Шаг 2: Код подтверждения -->
+                <div id="registerStep2" class="auth-step">
+                    <div class="code-sent-info">
+                        <i class="fas fa-envelope-open-text"></i>
+                        <p>Код отправлен на <strong id="codeSentToEmail"></strong></p>
+                        <small>Проверьте папку "Спам"</small>
+                    </div>
+                    
+                    <form onsubmit="verifyRegisterCode(event)">
+                        <div class="form-group">
+                            <label>Код из письма *</label>
+                            <div class="code-inputs">
+                                <input type="text" maxlength="1" class="code-digit" onkeyup="moveCodeFocus(this, 0)">
+                                <input type="text" maxlength="1" class="code-digit" onkeyup="moveCodeFocus(this, 1)">
+                                <input type="text" maxlength="1" class="code-digit" onkeyup="moveCodeFocus(this, 2)">
+                                <input type="text" maxlength="1" class="code-digit" onkeyup="moveCodeFocus(this, 3)">
+                                <input type="text" maxlength="1" class="code-digit" onkeyup="moveCodeFocus(this, 4)">
+                                <input type="text" maxlength="1" class="code-digit" onkeyup="submitCode(this)">
+                            </div>
+                            <input type="hidden" id="registerCodeFull">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-large">
+                            <i class="fas fa-arrow-right"></i> Продолжить
+                        </button>
+                    </form>
+                    
+                    <p class="resend-code">
+                        Не пришел код? <button class="btn-text" onclick="resendRegisterCode()">Отправить повторно</button>
+                        <span id="resendTimer"></span>
+                    </p>
+                    
+                    <button class="btn btn-text btn-block" onclick="backToRegisterEmail()">
+                        <i class="fas fa-arrow-left"></i> Изменить email
+                    </button>
+                </div>
+
+                <!-- Шаг 3: Создание пароля -->
+                <div id="registerStep3" class="auth-step">
+                    <div class="password-info">
+                        <i class="fas fa-lock"></i>
+                        <p>Придумайте пароль для входа</p>
+                    </div>
+                    
+                    <form onsubmit="createAccount(event)">
+                        <div class="form-group">
+                            <label>Пароль * (минимум 6 символов)</label>
+                            <div class="input-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="newPassword" required minlength="6" placeholder="Придумайте пароль">
+                                <button type="button" class="toggle-pass" onclick="togglePassword('newPassword', this)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Подтвердите пароль *</label>
+                            <div class="input-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="confirmPassword" required minlength="6" placeholder="Повторите пароль">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-large">
+                            <i class="fas fa-user-check"></i> Создать аккаунт
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ВХОД АДМИНИСТРАТОРА -->
+            <div id="adminLoginForm" class="auth-form-section">
+                <div class="auth-logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <h1>Панель управления</h1>
+                    <p>Защищенный вход</p>
+                </div>
+                
+                <form onsubmit="handleAdminLogin(event)">
+                    <div class="form-group">
+                        <label>Email администратора</label>
+                        <div class="input-icon">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="adminEmail" required value="henekskd@gmail.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Пароль</label>
+                        <div class="input-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="adminPassword" required>
+                            <button type="button" class="toggle-pass" onclick="togglePassword('adminPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block btn-large">
+                        <i class="fas fa-sign-in-alt"></i> Войти в панель
+                    </button>
+                </form>
+                
+                <button class="btn btn-text btn-block" onclick="showCustomerLogin()">
+                    <i class="fas fa-arrow-left"></i> Вход для покупателей
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== КЛИЕНТСКИЙ САЙТ ==================== -->
+    <div id="customerSite" class="site-container hidden">
+        <nav class="navbar">
+            <div class="container">
+                <a href="#" class="logo" onclick="showCustomerPage('home')">
+                    <i class="fas fa-cube"></i>
+                    <span id="siteName">3D Print Studio</span>
+                </a>
+                
+                <div class="nav-links">
+                    <a href="#" onclick="showCustomerPage('home')">Главная</a>
+                    <a href="#" onclick="showCustomerPage('catalog')">Каталог</a>
+                    <a href="#" onclick="showCustomerPage('about')">О нас</a>
+                    <a href="#" onclick="showCustomerPage('delivery')">Доставка</a>
+                    <a href="#" onclick="showCustomerPage('contacts')">Контакты</a>
+                </div>
+
+                <div class="nav-actions">
+                    <button class="btn-icon" onclick="toggleCustomerSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn-icon cart-btn" onclick="showCustomerPage('cart')">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="badge" id="customerCartBadge">0</span>
+                    </button>
+                    <div class="user-menu-trigger" onclick="toggleCustomerMenu()">
+                        <i class="fas fa-user-circle"></i>
+                        <div class="dropdown-menu" id="customerDropdown">
+                            <div class="dropdown-header">
+                                <strong id="customerEmailDisplay">user@email.com</strong>
+                            </div>
+                            <a href="#" onclick="showCustomerPage('orders')">
+                                <i class="fas fa-box"></i> Мои заказы
+                            </a>
+                            <a href="#" onclick="showCustomerPage('profile')">
+                                <i class="fas fa-user"></i> Профиль
+                            </a>
+                            <hr>
+                            <a href="#" onclick="customerLogout()" class="text-danger">
+                                <i class="fas fa-sign-out-alt"></i> Выйти
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="search-bar hidden" id="customerSearchBar">
+                <div class="container">
+                    <input type="text" id="customerSearchInput" placeholder="Поиск изделий..." onkeyup="searchCustomerProducts()">
+                    <button onclick="toggleCustomerSearch()"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="customer-main">
+            <!-- Главная -->
+            <div id="customerHome" class="customer-page active">
+                <section class="hero-shop">
+                    <div class="hero-content" id="heroContent">
+                        <h1 id="heroTitle">Профессиональная 3D печать на заказ</h1>
+                        <p id="heroSubtitle">Изготовление деталей любой сложности</p>
+                        <button class="btn btn-primary btn-large" onclick="showCustomerPage('catalog')">
+                            Смотреть каталог <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="features" id="featuresSection">
+                    <div class="container">
+                        <div class="features-grid" id="featuresGrid">
+                            <div class="feature">
+                                <i class="fas fa-clock"></i>
+                                <h3>Быстро</h3>
+                                <p>От 24 часов</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-gem"></i>
+                                <h3>Качественно</h3>
+                                <p>Точность 0.1мм</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-palette"></i>
+                                <h3>Цвета</h3>
+                                <p>20+ оттенков</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-shipping-fast"></i>
+                                <h3>Доставка</h3>
+                                <p>По всей России</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="popular-products">
+                    <div class="container">
+                        <h2>Популярные изделия</h2>
+                        <div class="products-grid" id="popularProductsGrid"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Каталог -->
+            <div id="customerCatalog" class="customer-page">
+                <div class="container">
+                    <div class="catalog-header">
+                        <h1>Каталог изделий</h1>
+                        <div class="catalog-filters">
+                            <select id="catalogCategory" onchange="filterCatalog()">
+                                <option value="all">Все категории</option>
+                            </select>
+                            <select id="catalogSort" onchange="filterCatalog()">
+                                <option value="popular">По популярности</option>
+                                <option value="price_asc">Цена: по возрастанию</option>
+                                <option value="price_desc">Цена: по убыванию</option>
+                                <option value="new">Новинки</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="products-grid" id="catalogProductsGrid"></div>
+                </div>
+            </div>
+
+            <!-- Страница товара -->
+            <div id="customerProduct" class="customer-page">
+                <div class="container">
+                    <button class="btn btn-back" onclick="showCustomerPage('catalog')">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                    <div class="product-detail-shop" id="customerProductDetail"></div>
+                </div>
+            </div>
+
+            <!-- Корзина -->
+            <div id="customerCart" class="customer-page">
+                <div class="container">
+                    <h1>Корзина</h1>
+                    <div class="cart-layout" id="customerCartContent"></div>
+                </div>
+            </div>
+
+            <!-- Оформление -->
+            <div id="customerCheckout" class="customer-page">
+                <div class="container">
+                    <h1>Оформление заказа</h1>
+                    <div class="checkout-layout">
+                        <form id="customerCheckoutForm" class="checkout-form" onsubmit="handleCustomerCheckout(event)">
+                            <div class="form-section">
+                                <h3><i class="fas fa-user"></i> Личные данные</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Фамилия *</label>
+                                        <input type="text" name="surname" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Имя *</label>
+                                        <input type="text" name="name" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Отчество</label>
+                                    <input type="text" name="patronymic">
+                                </div>
+                                <div class="form-group">
+                                    <label>Телефон *</label>
+                                    <input type="tel" name="phone" required placeholder="+7 (999) 000-00-00">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3><i class="fas fa-truck"></i> Доставка</h3>
+                                <div class="delivery-options" id="deliveryOptions"></div>
+                                <div id="deliveryAddressFields">
+                                    <div class="form-group">
+                                        <label>Город *</label>
+                                        <input type="text" name="city" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Полный адрес *</label>
+                                        <textarea name="address" rows="3" required placeholder="Улица, дом, квартира, индекс"></textarea>
+                                    </div>
+                                </div>
+                                <div id="pickupAddress" class="pickup-info hidden">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <div>
+                                        <strong>Пункт выдачи</strong>
+                                        <p id="pickupAddressText"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3><i class="fas fa-comment"></i> Комментарий</h3>
+                                <div class="form-group">
+                                    <textarea name="comment" rows="2" placeholder="Особые пожелания..."></textarea>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large btn-block">
+                                <i class="fas fa-check"></i> Подтвердить заказ
+                            </button>
+                        </form>
+
+                        <div class="checkout-summary">
+                            <h3>Ваш заказ</h3>
+                            <div id="checkoutItemsList"></div>
+                            <div class="summary-row">
+                                <span>Товары</span>
+                                <span id="checkoutSubtotal">0 ₽</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Доставка</span>
+                                <span id="checkoutDelivery">0 ₽</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Итого</span>
+                                <strong id="checkoutTotalPrice">0 ₽</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Успех -->
+            <div id="customerSuccess" class="customer-page">
+                <div class="container">
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <h1>Заказ принят!</h1>
+                        <p>Мы свяжемся с вами для подтверждения</p>
+                        <div class="order-info-card">
+                            <p>Номер: <strong id="successOrderNumber">-</strong></p>
+                            <p>Сумма: <strong id="successOrderTotal">-</strong></p>
+                            <div id="paymentLinkSection" class="payment-link-box hidden">
+                                <p>Ссылка для оплаты:</p>
+                                <a href="#" id="paymentLink" target="_blank" class="btn btn-primary btn-block">
+                                    <i class="fas fa-external-link-alt"></i> Оплатить
+                                </a>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-large" onclick="showCustomerPage('home')">
+                            На главную
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Заказы -->
+            <div id="customerOrders" class="customer-page">
+                <div class="container">
+                    <h1>Мои заказы</h1>
+                    <div class="orders-list" id="customerOrdersList"></div>
+                </div>
+            </div>
+
+            <!-- Профиль -->
+            <div id="customerProfile" class="customer-page">
+                <div class="container">
+                    <h1>Профиль</h1>
+                    <div class="profile-card">
+                        <div class="profile-field">
+                            <label>Email</label>
+                            <p id="profileEmail">-</p>
+                        </div>
+                        <div class="profile-field">
+                            <label>Телефон</label>
+                            <p id="profilePhone">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- О нас -->
+            <div id="customerAbout" class="customer-page">
+                <div class="container">
+                    <h1>О нас</h1>
+                    <div class="about-content" id="aboutContent"></div>
+                </div>
+            </div>
+
+            <!-- Доставка -->
+            <div id="customerDelivery" class="customer-page">
+                <div class="container">
+                    <h1>Доставка и оплата</h1>
+                    <div class="delivery-content" id="deliveryContent"></div>
+                </div>
+            </div>
+
+            <!-- Контакты -->
+            <div id="customerContacts" class="customer-page">
+                <div class="container">
+                    <h1>Контакты</h1>
+                    <div class="contacts-content" id="contactsContent"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer" id="siteFooter">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-brand">
+                        <i class="fas fa-cube"></i>
+                        <span id="footerSiteName">3D Print Studio</span>
+                        <p id="footerTagline">Профессиональная 3D печать</p>
+                    </div>
+                    <div class="footer-contacts" id="footerContacts"></div>
+                    <div class="footer-links">
+                        <h4>Навигация</h4>
+                        <a href="#" onclick="showCustomerPage('home')">Главная</a>
+                        <a href="#" onclick="showCustomerPage('catalog')">Каталог</a>
+                        <a href="#" onclick="showCustomerPage('about')">О нас</a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p id="copyright">&copy; 2024 3D Print Studio</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ==================== АДМИН-ПАНЕЛЬ ==================== -->
+    <div id="adminPanel" class="admin-container hidden">
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-shield-alt"></i>
+                <span>Админ-панель</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="showAdminSection('dashboard')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Обзор</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('products')">
+                    <i class="fas fa-boxes"></i>
+                    <span>Товары</span>
+                    <span class="nav-badge" id="adminProductsCount">0</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('addProduct')">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Добавить товар</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('orders')">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Заказы</span>
+                    <span class="nav-badge nav-badge-new" id="adminOrdersCount">0</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('customers')">
+                    <i class="fas fa-users"></i>
+                    <span>Покупатели</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('content')">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Контент</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('delivery')">
+                    <i class="fas fa-truck"></i>
+                    <span>Доставка</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showAdminSection('payment')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Оплата</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="btn btn-outline btn-sm btn-block" onclick="adminLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+            <header class="admin-header">
+                <h2 id="adminSectionTitle">Обзор магазина</h2>
+                <div class="header-actions">
+                    <button class="btn btn-icon" onclick="previewSite()">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <div class="admin-profile">
+                        <i class="fas fa-user-shield"></i>
+                        <span id="adminEmailDisplay">admin@email.com</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Дашборд -->
+            <section id="adminDashboard" class="admin-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--gradient-1);">
+                            <i class="fas fa-ruble-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="statRevenue">0 ₽</h3>
+                            <p>Выручка</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--gradient-2);">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="statOrders">0</h3>
+                            <p>Заказов</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="statProducts">0</h3>
+                            <p>Товаров</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="statCustomers">0</h3>
+                            <p>Покупателей</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-clock"></i> Последние заказы</h3>
+                        <div id="recentOrdersList" class="recent-list"></div>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3><i class="fas fa-chart-bar"></i> Популярные товары</h3>
+                        <div id="topProductsList" class="recent-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Товары -->
+            <section id="adminProducts" class="admin-section">
+                <div class="section-toolbar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="adminProductSearch" placeholder="Поиск..." onkeyup="filterAdminProducts()">
+                    </div>
+                    <select id="adminProductFilter" onchange="filterAdminProducts()">
+                        <option value="all">Все</option>
+                        <option value="active">Активные</option>
+                        <option value="hidden">Скрытые</option>
+                    </select>
+                </div>
+                <div class="products-table-wrapper">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>Цена</th>
+                                <th>Наличие</th>
+                                <th>Продажи</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminProductsTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Добавить товар -->
+            <section id="adminAddProduct" class="admin-section">
+                <form id="addProductForm" class="product-form" onsubmit="handleAddProduct(event)">
+                    <div class="form-grid">
+                        <div class="form-column">
+                            <h3>Основное</h3>
+                            <div class="form-group">
+                                <label>Название *</label>
+                                <input type="text" name="title" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Цена (₽) *</label>
+                                    <input type="number" name="price" required min="1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Наличие *</label>
+                                    <input type="number" name="stock" required min="0" value="1">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Категория</label>
+                                <select name="category" id="adminCategorySelect"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Описание</label>
+                                <textarea name="description" rows="4"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-column">
+                            <h3>Характеристики</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Материал</label>
+                                    <input type="text" name="material" placeholder="PLA, PETG...">
+                                </div>
+                                <div class="form-group">
+                                    <label>Цвет</label>
+                                    <input type="text" name="color" placeholder="Черный">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Размеры (мм)</label>
+                                    <input type="text" name="dimensions" placeholder="100x100x100">
+                                </div>
+                                <div class="form-group">
+                                    <label>Вес (г)</label>
+                                    <input type="number" name="weight" step="0.1">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Время печати</label>
+                                <input type="text" name="print_time" placeholder="4 часа">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" onclick="showAdminSection('products')">Отмена</button>
+                        <button type="submit" class="btn btn-primary btn-large">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Заказы -->
+            <section id="adminOrders" class="admin-section">
+                <div class="section-toolbar">
+                    <div class="filter-tabs">
+                        <button class="tab-btn active" onclick="filterAdminOrders('all')">Все</button>
+                        <button class="tab-btn" onclick="filterAdminOrders('new')">Новые</button>
+                        <button class="tab-btn" onclick="filterAdminOrders('processing')">В работе</button>
+                        <button class="tab-btn" onclick="filterAdminOrders('paid')">Оплачены</button>
+                        <button class="tab-btn" onclick="filterAdminOrders('shipped')">Отправлены</button>
+                        <button class="tab-btn" onclick="filterAdminOrders('completed')">Выполнены</button>
+                    </div>
+                </div>
+                <div class="orders-admin-grid" id="adminOrdersGrid"></div>
+            </section>
+
+            <!-- Покупатели -->
+            <section id="adminCustomers" class="admin-section">
+                <div class="customers-table-wrapper">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Заказов</th>
+                                <th>Сумма</th>
+                                <th>Последний заказ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminCustomersTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Контент -->
+            <section id="adminContent" class="admin-section">
+                <div class="content-editor">
+                    <div class="editor-card">
+                        <h3>Главная страница</h3>
+                        <div class="form-group">
+                            <label>Название сайта</label>
+                            <input type="text" id="contentSiteName" onchange="updateSiteContent()">
+                        </div>
+                        <div class="form-group">
+                            <label>Заголовок</label>
+                            <input type="text" id="contentHeroTitle" onchange="updateSiteContent()">
+                        </div>
+                        <div class="form-group">
+                            <label>Подзаголовок</label>
+                            <textarea id="contentHeroSubtitle" rows="2" onchange="updateSiteContent()"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="editor-card">
+                        <h3>О нас</h3>
+                        <div class="form-group">
+                            <label>Описание</label>
+                            <textarea id="contentAbout" rows="6" onchange="updateSiteContent()"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="editor-card">
+                        <h3>Контакты</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Телефон</label>
+                                <input type="text" id="contentPhone" onchange="updateSiteContent()">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="text" id="contentEmail" onchange="updateSiteContent()">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Адрес</label>
+                            <textarea id="contentAddress" rows="2" onchange="updateSiteContent()"></textarea>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-large" onclick="saveAllContent()">
+                        <i class="fas fa-save"></i> Сохранить
+                    </button>
+                </div>
+            </section>
+
+            <!-- Доставка -->
+            <section id="adminDelivery" class="admin-section">
+                <div class="delivery-settings">
+                    <div class="settings-card">
+                        <h3>Способы доставки</h3>
+                        <div class="delivery-methods-list" id="deliveryMethodsList"></div>
+                        <button class="btn btn-outline" onclick="addDeliveryMethod()">
+                            <i class="fas fa-plus"></i> Добавить
+                        </button>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Самовывоз</h3>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="pickupEnabled" onchange="updateDeliverySettings()">
+                                <span>Доступен</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>Адрес</label>
+                            <textarea id="pickupAddress" rows="2" onchange="updateDeliverySettings()"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <h3>Стоимость</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Базовая (₽)</label>
+                                <input type="number" id="baseDeliveryPrice" onchange="updateDeliverySettings()">
+                            </div>
+                            <div class="form-group">
+                                <label>Бесплатно от (₽)</label>
+                                <input type="number" id="freeDeliveryFrom" onchange="updateDeliverySettings()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Оплата -->
+            <section id="adminPayment" class="admin-section">
+                <div class="payment-settings">
+                    <div class="settings-card">
+                        <h3>Платежная ссылка</h3>
+                        <div class="form-group">
+                            <label>URL для оплаты</label>
+                            <input type="text" id="paymentLinkUrl" placeholder="https://...">
+                            <small>Используйте {amount} для суммы, {order} для номера</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Название способа</label>
+                            <input type="text" id="paymentMethodName" value="Оплата картой / СБП">
+                        </div>
+                        <button class="btn btn-primary btn-large" onclick="savePaymentSettings()">
+                            <i class="fas fa-save"></i> Сохранить
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Модалки -->
+    <div class="modal" id="editProductModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Редактирование</h2>
+                <button class="modal-close" onclick="closeModal('editProductModal')">&times;</button>
+            </div>
+            <form id="editProductForm" onsubmit="handleEditProduct(event)">
+                <input type="hidden" id="editProductId">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Название</label>
+                        <input type="text" id="editTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Цена</label>
+                        <input type="number" id="editPrice" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Наличие</label>
+                        <input type="number" id="editStock" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Статус</label>
+                        <select id="editStatus">
+                            <option value="active">Активен</option>
+                            <option value="hidden">Скрыт</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="editDescription" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editProductModal')">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="orderDetailsModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Заказ <span id="modalOrderId">-</span></h2>
+                <button class="modal-close" onclick="closeModal('orderDetailsModal')">&times;</button>
+            </div>
+            <div id="orderDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+</body>
+</html>
