@@ -1,0 +1,110 @@
+/* Дополнительные стили для новой авторизации */
+
+.user-info-box {
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--surface-light);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.user-info-box i {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
+}
+
+.user-info-box p {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.new-user-info {
+    text-align: center;
+    padding: 2rem;
+    background: var(--surface-light);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.new-user-info i {
+    font-size: 3rem;
+    color: var(--success);
+    margin-bottom: 0.75rem;
+}
+
+.password-info {
+    text-align: center;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.password-info i {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: 0.75rem;
+}
+
+.forgot-password {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.forgot-password a {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.admin-hint {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.admin-hint a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.admin-hint i {
+    margin-right: 0.5rem;
+}
+
+/* Улучшенные стили для кода */
+.code-inputs {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.code-digit {
+    width: 50px;
+    height: 60px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--background);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    transition: all 0.2s;
+}
+
+.code-digit:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    .code-digit {
+        width: 40px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+}
